@@ -10,24 +10,24 @@ import { Platform } from 'react-native';
 export const Colors = {
   light: {
     text: '#161a24',
-    background: '#f7f4ef',
+    background: '#f6f7f5',
     backgroundElement: '#ffffff',
-    backgroundSelected: '#e8f1ee',
-    textSecondary: '#596273',
-    border: '#e5ded3',
-    primary: '#176b61',
+    backgroundSelected: '#edf4f1',
+    textSecondary: '#667085',
+    border: '#e2e8e2',
+    primary: '#17695f',
     primaryText: '#ffffff',
-    accent: '#f0b86a',
-    surfaceStrong: '#232936',
+    accent: '#d79b48',
+    surfaceStrong: '#1f2832',
   },
   dark: {
-    text: '#f7f4ef',
-    background: '#10131a',
-    backgroundElement: '#1b202b',
-    backgroundSelected: '#26352f',
-    textSecondary: '#b8bfcb',
-    border: '#303744',
-    primary: '#70c7b8',
+    text: '#f5f7fa',
+    background: '#0f1318',
+    backgroundElement: '#191f27',
+    backgroundSelected: '#22342f',
+    textSecondary: '#a8b1bf',
+    border: '#2b3440',
+    primary: '#7bcfc0',
     primaryText: '#10131a',
     accent: '#f0b86a',
     surfaceStrong: '#07090d',
@@ -71,5 +71,21 @@ export const Spacing = {
   six: 64,
 } as const;
 
-export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
+export const BottomTabInset = Platform.select({ ios: 104, android: 104, web: 104 }) ?? 104;
 export const MaxContentWidth = 800;
+
+export const AppRadii = {
+  card: 20,
+  control: 14,
+  inner: 16,
+} as const;
+
+export const AppShadows = {
+  card: {
+    elevation: 3,
+    shadowColor: '#101828',
+    shadowOffset: { height: 8, width: 0 },
+    shadowOpacity: 0.07,
+    shadowRadius: 20,
+  },
+} as const;

@@ -1,31 +1,3 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
-import React from 'react';
+import LiquidGlassTabs from './liquid-glass-tabs';
 
-import { useTheme } from '@/hooks/use-theme';
-
-export default function AppTabs() {
-  const colors = useTheme();
-
-  return (
-    <NativeTabs
-      backgroundColor={colors.background}
-      indicatorColor={colors.backgroundElement}
-      labelStyle={{ selected: { color: colors.text } }}>
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Fiton</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="setup">
-        <NativeTabs.Trigger.Label>Setup</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="history">
-        <NativeTabs.Trigger.Label>History</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="settings">
-        <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
-  );
-}
+export default LiquidGlassTabs;

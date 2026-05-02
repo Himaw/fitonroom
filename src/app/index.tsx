@@ -2,10 +2,21 @@ import { useFocusEffect } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BottomTabInset, MaxContentWidth } from '@/constants/theme';
+import { AppRadii, AppShadows, BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { getStoredBodyPhotos } from '@/lib/body-photo-store';
 import { getOrCreateDeviceInstallId } from '@/lib/device-install-id';
@@ -20,6 +31,9 @@ export default function FitonScreen() {
   const [deviceInstallId, setDeviceInstallId] = useState<string>('Preparing device history...');
   const [hasBodyPhotos, setHasBodyPhotos] = useState(false);
   const [productPhotos, setProductPhotos] = useState<ProductPhoto[]>([]);
+  const [productUrl, setProductUrl] = useState('');
+  const [draftProductUrl, setDraftProductUrl] = useState('');
+  const [isUrlDialogVisible, setIsUrlDialogVisible] = useState(false);
 
   useEffect(() => {
     getOrCreateDeviceInstallId()
@@ -59,6 +73,16 @@ export default function FitonScreen() {
         id: asset.assetId ?? asset.uri,
       }))
     );
+  };
+
+  const openUrlDialog = () => {
+    setDraftProductUrl(productUrl);
+    setIsUrlDialogVisible(true);
+  };
+
+  const saveProductUrl = () => {
+    setProductUrl(draftProductUrl.trim());
+    setIsUrlDialogVisible(false);
   };
 
   return (
@@ -116,16 +140,23 @@ export default function FitonScreen() {
           )}
 
           <View style={[styles.urlBox, { borderColor: theme.border }]}>
-            <TextInput
-              placeholder="Paste clothing product URL"
-              placeholderTextColor={theme.textSecondary}
-              autoCapitalize="none"
-              autoCorrect={false}
-              inputMode="url"
-              style={[styles.urlInput, { color: theme.text }]}
-            />
-            <Pressable style={[styles.secondaryButton, { borderColor: theme.border }]}>
-              <Text style={[styles.secondaryButtonText, { color: theme.text }]}>Add URL</Text>
+            <View style={styles.urlSummary}>
+              <Text style={[styles.urlLabel, { color: theme.textSecondary }]}>Product URL</Text>
+              <Text
+                numberOfLines={productUrl ? 2 : 1}
+                style={[
+                  styles.urlValue,
+                  { color: productUrl ? theme.text : theme.textSecondary },
+                ]}>
+                {productUrl || 'No product URL added yet'}
+              </Text>
+            </View>
+            <Pressable
+              onPress={openUrlDialog}
+              style={[styles.secondaryButton, { borderColor: theme.border }]}>
+              <Text style={[styles.secondaryButtonText, { color: theme.text }]}>
+                {productUrl ? 'Change URL' : 'Add URL'}
+              </Text>
             </Pressable>
           </View>
         </View>
@@ -142,6 +173,65 @@ export default function FitonScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={isUrlDialogVisible}
+        onRequestClose={() => setIsUrlDialogVisible(false)}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.dialogRoot}>
+          <Pressable
+            aria-label="Close URL dialog"
+            onPress={() => setIsUrlDialogVisible(false)}
+            style={styles.dialogBackdrop}
+          />
+          <View
+            style={[
+              styles.dialogCard,
+              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+            ]}>
+            <Text style={[styles.dialogEyebrow, { color: theme.primary }]}>Product URL</Text>
+            <Text style={[styles.dialogTitle, { color: theme.text }]}>Add clothing link</Text>
+            <Text style={[styles.dialogText, { color: theme.textSecondary }]}>
+              Paste the product page URL for the item you want to try on.
+            </Text>
+
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoFocus
+              inputMode="url"
+              onChangeText={setDraftProductUrl}
+              placeholder="https://store.com/product"
+              placeholderTextColor={theme.textSecondary}
+              style={[
+                styles.dialogInput,
+                {
+                  backgroundColor: theme.background,
+                  borderColor: theme.border,
+                  color: theme.text,
+                },
+              ]}
+              value={draftProductUrl}
+            />
+
+            <View style={styles.dialogActions}>
+              <Pressable
+                onPress={() => setIsUrlDialogVisible(false)}
+                style={[styles.dialogSecondaryButton, { borderColor: theme.border }]}>
+                <Text style={[styles.dialogSecondaryText, { color: theme.text }]}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={saveProductUrl}
+                style={[styles.dialogPrimaryButton, { backgroundColor: theme.primary }]}>
+                <Text style={[styles.dialogPrimaryText, { color: theme.primaryText }]}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -154,9 +244,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     gap: 18,
     maxWidth: MaxContentWidth,
-    paddingBottom: BottomTabInset + 36,
-    paddingHorizontal: 22,
-    paddingTop: 26,
+    paddingBottom: BottomTabInset + 32,
+    paddingHorizontal: 20,
+    paddingTop: 24,
     width: '100%',
   },
   header: {
@@ -164,24 +254,26 @@ const styles = StyleSheet.create({
     paddingTop: 8,
   },
   brand: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '800',
+    letterSpacing: 0,
     textTransform: 'uppercase',
   },
   title: {
-    fontSize: 38,
+    fontSize: 34,
     fontWeight: '800',
-    lineHeight: 43,
+    lineHeight: 39,
   },
   subtitle: {
-    fontSize: 17,
+    fontSize: 16,
     lineHeight: 25,
   },
   setupPrompt: {
-    borderRadius: 18,
+    ...AppShadows.card,
+    borderRadius: AppRadii.card,
     borderWidth: 1,
     gap: 10,
-    padding: 18,
+    padding: 20,
   },
   setupTitle: {
     fontSize: 20,
@@ -193,19 +285,20 @@ const styles = StyleSheet.create({
   },
   setupButton: {
     alignItems: 'center',
-    borderRadius: 13,
+    borderRadius: AppRadii.control,
     marginTop: 4,
-    paddingVertical: 13,
+    paddingVertical: 14,
   },
   setupButtonText: {
     fontSize: 15,
     fontWeight: '800',
   },
   panel: {
-    borderRadius: 18,
+    ...AppShadows.card,
+    borderRadius: AppRadii.card,
     borderWidth: 1,
     gap: 14,
-    padding: 18,
+    padding: 20,
   },
   panelLabel: {
     fontSize: 12,
@@ -214,7 +307,7 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: AppRadii.control,
     paddingVertical: 16,
   },
   primaryButtonText: {
@@ -227,23 +320,33 @@ const styles = StyleSheet.create({
   },
   productPreview: {
     aspectRatio: 1,
-    borderRadius: 12,
+    borderRadius: AppRadii.control,
     flex: 1,
     maxHeight: 110,
   },
   urlBox: {
-    borderRadius: 14,
+    borderRadius: AppRadii.inner,
     borderWidth: 1,
     gap: 10,
-    padding: 12,
+    padding: 14,
   },
-  urlInput: {
-    fontSize: 16,
+  urlSummary: {
+    gap: 4,
     minHeight: 44,
+    justifyContent: 'center',
+  },
+  urlLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  urlValue: {
+    fontSize: 16,
+    lineHeight: 22,
   },
   secondaryButton: {
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: AppRadii.control,
     borderWidth: 1,
     paddingVertical: 13,
   },
@@ -252,10 +355,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   statusCard: {
-    borderRadius: 18,
+    ...AppShadows.card,
+    borderRadius: AppRadii.card,
     borderWidth: 1,
     gap: 8,
-    padding: 18,
+    padding: 20,
   },
   statusLabel: {
     fontSize: 12,
@@ -272,5 +376,71 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
+  dialogRoot: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    padding: 20,
+  },
+  dialogBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(12, 16, 22, 0.48)',
+  },
+  dialogCard: {
+    ...AppShadows.card,
+    borderRadius: 24,
+    borderWidth: 1,
+    gap: 12,
+    maxWidth: 420,
+    padding: 22,
+    width: '100%',
+  },
+  dialogEyebrow: {
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  dialogTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    lineHeight: 30,
+  },
+  dialogText: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  dialogInput: {
+    borderRadius: AppRadii.control,
+    borderWidth: 1,
+    fontSize: 16,
+    minHeight: 54,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  dialogActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  dialogPrimaryButton: {
+    alignItems: 'center',
+    borderRadius: AppRadii.control,
+    flex: 1,
+    paddingVertical: 14,
+  },
+  dialogPrimaryText: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  dialogSecondaryButton: {
+    alignItems: 'center',
+    borderRadius: AppRadii.control,
+    borderWidth: 1,
+    flex: 1,
+    paddingVertical: 14,
+  },
+  dialogSecondaryText: {
+    fontSize: 15,
+    fontWeight: '800',
+  },
 });
-

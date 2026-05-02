@@ -1,7 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { BottomTabInset, MaxContentWidth } from '@/constants/theme';
+import { AppRadii, AppShadows, BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { ThemeMode, useThemeMode } from '@/lib/theme-mode';
 
@@ -81,33 +81,35 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     gap: 18,
     maxWidth: MaxContentWidth,
-    paddingBottom: BottomTabInset + 36,
-    paddingHorizontal: 22,
-    paddingTop: 26,
+    paddingBottom: BottomTabInset + 32,
+    paddingHorizontal: 20,
+    paddingTop: 24,
     width: '100%',
   },
   header: {
     gap: 10,
   },
   eyebrow: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '800',
+    letterSpacing: 0,
     textTransform: 'uppercase',
   },
   title: {
-    fontSize: 34,
+    fontSize: 32,
     fontWeight: '800',
-    lineHeight: 39,
+    lineHeight: 37,
   },
   subtitle: {
     fontSize: 16,
     lineHeight: 24,
   },
   panel: {
-    borderRadius: 18,
+    ...AppShadows.card,
+    borderRadius: AppRadii.card,
     borderWidth: 1,
     gap: 14,
-    padding: 18,
+    padding: 20,
   },
   panelTitle: {
     fontSize: 22,
@@ -118,7 +120,7 @@ const styles = StyleSheet.create({
   },
   option: {
     alignItems: 'center',
-    borderRadius: 14,
+    borderRadius: AppRadii.inner,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 14,
