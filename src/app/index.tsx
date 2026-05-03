@@ -127,7 +127,7 @@ export default function FitonScreen() {
             onPress={pickProductPhotos}
             style={[styles.primaryButton, { backgroundColor: theme.primary }]}>
             <Text style={[styles.primaryButtonText, { color: theme.primaryText }]}>
-              Upload clothing photos or screenshots
+              Upload photos/screenshots
             </Text>
           </Pressable>
 
