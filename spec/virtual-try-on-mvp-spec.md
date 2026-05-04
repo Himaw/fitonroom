@@ -1,7 +1,7 @@
 # Fiton Room MVP Product and System Design Spec
 
 Status: Updated first product version  
-Document date: May 4, 2026  
+Document last updated: May 4, 2026  
 Prepared for: Fiton Room MVP planning
 
 Fiton Room is a mobile virtual try-on app that lets shoppers sign in with a simple OAuth flow, upload full-body photos, submit clothing from online stores, and receive AI-generated try-on results.
