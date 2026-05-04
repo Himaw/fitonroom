@@ -17,6 +17,8 @@ Fiton Room is a mobile virtual try-on app that lets shoppers sign in with a simp
 | Monetization | Each new user receives 5 initial Fitons; paid subscriptions grant more Fitons monthly |
 | MVP goal | Validate whether users find virtual try-on useful, fast enough, visually convincing, and worth paying for after the free trial |
 
+
+
 ## Contents
 
 1. Executive Summary
