@@ -1,134 +1,141 @@
-# Virtual Try-On App MVP Spec
+# Fiton Room MVP Product and System Design Spec
 
-Status: Draft v0.1  
-Owner: TBD  
-Last updated: 2026-05-01
+Status: First product version  
+Document date: May 1, 2026  
+Prepared for: Fiton Room MVP planning
 
-## 1. Product Summary
+Fiton Room is a mobile virtual try-on app that lets shoppers upload full-body photos, submit clothing from online stores, and receive AI-generated try-on results.
 
-The app lets a user upload 1-3 full-body photos, share or submit clothing they find online, and receive an AI-generated try-on image showing how the garment may look on them.
+## MVP Overview
 
-The MVP should prove that users can:
+| Area | Decision |
+| --- | --- |
+| Version | First product version with no user login and device-based history |
+| Primary platform | React Native mobile app with iOS-specific share extension support |
+| Core backend | Node.js API, Postgres, S3, SQS, worker processing, and GenAI try-on provider |
+| MVP goal | Validate whether users find virtual try-on useful, fast enough, and visually convincing |
 
-- Create an account or session
-- Upload body photos
-- Submit a clothing item through a URL, screenshot, or share extension
-- Start an async try-on job
-- See processing status
-- Receive a completed try-on image
-- Optionally receive a push notification when processing completes
+## Contents
 
-## 2. Primary User Flow
+1. Executive Summary
+2. Product Vision
+3. Version 1 User Flow
+4. MVP Feature Scope
+5. Recommended Tech Stack
+6. Initial System Design
+7. Service Connections
+8. Device-Based History Model
+9. Data Model
+10. API Surface
+11. Caching Strategy
+12. Security and Privacy
+13. Development Roadmap
+14. Open Questions
 
-1. User installs and opens the mobile app.
-2. User signs in or continues with a lightweight account/session.
-3. User uploads 1-3 full-body photos.
-4. App stores photos securely in S3 using pre-signed upload URLs.
-5. User finds clothing online.
-6. User submits clothing using one of three inputs:
-   - Share to app from browser or shopping app
-   - Paste product URL
-   - Upload screenshot
-7. Backend creates a try-on job and places it in an async queue.
-8. Worker extracts product/garment data.
-9. Worker sends user image and garment input to a virtual try-on / GenAI API.
-10. Generated result is saved to S3 and linked in the database.
-11. App shows the result.
-12. App optionally sends a push notification when the job completes.
+## 1. Executive Summary
 
-## 3. MVP Feature List
+Fiton Room is a mobile virtual try-on app. A user uploads one to three full-body photos, submits a clothing item from an online store, and receives an AI-generated image showing the garment on their body.
+
+The first version should avoid login and reduce friction. Instead of accounts, the app will create a secure app-generated device install ID and use it to keep each device's upload history, job history, and result gallery.
+
+### MVP Identity
+
+No login; secure device install ID.
+
+### Image Storage
+
+Amazon S3 and CloudFront.
+
+### Backend
+
+Node.js API and async worker.
+
+### Database
+
+Supabase Postgres for MVP.
+
+### Recommendation
+
+Start without Kubernetes/EKS. Use S3, SQS, Lambda or ECS/Fargate worker, Postgres, and a third-party try-on API. Add Redis and heavier infrastructure after real usage proves the need.
+
+## 2. Product Vision
+
+Fiton Room should make online clothing discovery feel more personal. The product is not just an image generator; it is a shopping companion that turns product pages, screenshots, and shared links into personal try-on previews.
+
+### Primary MVP Outcome
+
+Validate that users can complete the flow from uploaded photo to useful try-on image with minimal friction and enough visual quality to make them return.
+
+### Initial Target User
+
+Everyday online shoppers who want to preview clothes on themselves before buying.
+
+## 3. Version 1 User Flow
+
+1. Open app: User opens Fiton Room without creating an account.
+2. Create device identity: App creates a secure install ID and registers the device with the backend.
+3. Upload photos: User uploads one to three full-body photos using S3 pre-signed URLs.
+4. Submit clothing: User pastes a product URL, uploads a screenshot, or uses the iOS share extension.
+5. Create job: Backend creates a try-on job and sends it to an async queue.
+6. Generate result: Worker extracts garment data and calls the virtual try-on API.
+7. Save and notify: Result is saved to S3, metadata is saved in Postgres, and a push notification may be sent.
+8. View history: User sees result history tied to this device install ID.
+
+## 4. MVP Feature Scope
 
 ### Must Have
 
-- React Native mobile app
-- Upload 1-3 full-body user photos
+- React Native mobile app with Fiton Room branding
+- No-login first launch using app-generated device install ID
+- Upload one to three full-body photos
 - Paste product URL
 - Upload clothing screenshot
-- Create try-on job
-- Show job status: pending, processing, completed, failed
-- Show generated try-on result
-- Store original uploads and generated images in S3
-- Store user, photo, product, and job metadata in Postgres
-- Basic authentication
-- Basic privacy controls and image deletion
+- Create try-on job and show status: pending, processing, completed, failed
+- Display generated try-on result
+- Device-based result history
+- Delete uploaded photos and generated results from the device history
+- S3 storage for raw uploads and generated results
+- Postgres metadata storage
 
 ### Should Have
 
 - iOS Share Extension using Swift
-- Push notification on job completion
+- Push notification when processing completes
+- CloudFront image delivery
+- Basic retry for failed worker jobs
 - Product URL extraction cache
-- Result gallery/history
-- Basic job retry on worker failure
-- Admin dashboard for reviewing jobs and failures
+- Internal admin dashboard for job review and failure debugging
 
 ### Later
 
-- Android share extension
-- Multiple generated variations per garment
-- Outfit combinations
+- User accounts and cross-device sync
+- Android share support
 - Saved wardrobe
-- Recommendations
-- Payments/subscriptions
-- Social sharing
+- Multiple try-on variations per item
+- Paid credits or subscription plans
+- Affiliate links or ecommerce checkout integrations
 - In-house ML model
-- Kubernetes/EKS deployment
+- Kubernetes/EKS for mature scale
 
-## 4. Recommended Tech Stack
+## 5. Recommended Tech Stack
 
-### Client
+| Layer | Choice | Reason |
+| --- | --- | --- |
+| Mobile | React Native + TypeScript | Fast cross-platform mobile development |
+| UI | HeroUI Native | Native-focused UI layer matching the app plan |
+| iOS Extension | Swift / SwiftUI | Best fit for iOS share extension behavior |
+| Backend API | Node.js with NestJS or Fastify | Good developer speed, strong ecosystem, simple API work |
+| Database | Supabase Postgres | Fast MVP setup, free tier, real Postgres |
+| Object Storage | Amazon S3 | Reliable storage for user uploads and generated images |
+| CDN | Amazon CloudFront | Faster delivery of thumbnails and results |
+| Queue | Amazon SQS | Simple async job orchestration |
+| Worker | Lambda first, ECS/Fargate later | Start simple; move to containers if jobs are long-running |
+| Cache | Redis later | Useful for rate limits, job status, and URL extraction cache after traffic grows |
+| Web/Admin Hosting | AWS Amplify Hosting | Good for a web dashboard, not for hosting the mobile app itself |
 
-- React Native + TypeScript
-- HeroUI Native for mobile UI
-- Swift / SwiftUI for iOS Share Extension
-- Expo Push Notifications for MVP, or direct APNs/FCM later
-- Local mobile cache for thumbnails and recent results
+## 6. Initial System Design
 
-### Backend
-
-- Node.js with NestJS or Fastify
-- REST API for MVP
-- Optional GraphQL later if app screens become highly data-driven
-
-### Database
-
-Recommended MVP choice: Supabase Postgres.
-
-Reasons:
-
-- Free tier is good for MVP
-- Real Postgres
-- Fast to build with
-- Can support auth if desired
-- Easier than managing AWS RDS on day one
-
-Alternative:
-
-- AWS RDS Postgres if the product must be fully AWS-native from the start
-- Neon Postgres if only a hosted Postgres database is needed
-
-### AWS Services
-
-- S3 Raw Images Bucket: user body photos, screenshots, source inputs
-- S3 Results Bucket: generated try-on images
-- CloudFront: CDN in front of generated images and thumbnails
-- SQS: async try-on job queue
-- Lambda: MVP worker runtime
-- ECS/Fargate: later worker runtime if image jobs are too long for Lambda
-- ElastiCache Redis or Upstash Redis: caching and rate limiting
-- Amplify Hosting: only for web/admin dashboard, not for hosting the mobile app
-
-### AI / Image Processing
-
-- Third-party virtual try-on or GenAI image API for MVP
-- Garment extraction / segmentation service or model
-- Product scraper or screenshot parser
-- Avoid training an in-house model during MVP
-
-## 5. Initial System Design
-
-![Virtual Try-On App System Design](./assets/virtual-try-on-system-design.png)
-
-### High-Level Architecture
+Initial Fiton Room architecture: mobile app, backend API, S3, CloudFront, Postgres, SQS, worker processing, GenAI try-on API, cache, and push notifications.
 
 ```text
 React Native App
@@ -144,156 +151,74 @@ React Native App
   -> Push Notification
 ```
 
-## 6. Service Connections
+## 7. Service Connections
 
 ### Mobile App to Backend API
 
-- Mobile app communicates with the Node.js API over HTTPS.
-- Backend authenticates user requests.
-- Backend creates pre-signed S3 upload URLs.
-- Backend creates try-on jobs.
-- Backend returns job status and result metadata.
+The app calls the Node.js API over HTTPS. The API handles device registration, upload URL creation, job creation, job status, result history, deletion requests, and push token registration.
 
 ### Mobile App to S3
 
-- App should upload images directly to S3 using pre-signed URLs.
-- This avoids sending large image files through the backend API.
-- Backend stores only metadata and object keys in Postgres.
+The app uploads photos and screenshots directly to S3 using pre-signed URLs from the backend. Large image files should not pass through the API server.
 
 ### Backend API to Postgres
 
-Stores:
-
-- Users
-- User photos
-- Product submissions
-- Try-on jobs
-- Result image metadata
-- Push notification device tokens
-- Basic audit records
+Postgres stores device identities, photo metadata, product submissions, job records, results, and push tokens. The database should store S3 object keys, not raw images.
 
 ### Backend API to SQS
 
-- When a try-on job is created, the backend writes a message to SQS.
-- The message contains job ID and references to stored image/product inputs.
-- Large image files are never sent through SQS.
+When the app creates a try-on job, the backend stores a job row in Postgres and sends a compact message to SQS containing job ID and input references.
 
 ### SQS to Worker
 
-- Worker consumes jobs from SQS.
-- Worker updates job status in Postgres and Redis.
-- Worker fetches source assets from S3.
-- Worker calls product extraction, garment extraction, and try-on generation services.
-- Worker saves completed output to S3 Results Bucket.
+The worker pulls jobs from SQS, fetches source assets from S3, extracts garment/product details, calls the try-on API, writes the result image to S3, and updates Postgres.
 
 ### S3 Results to CloudFront
 
-- Result images and thumbnails are served through CloudFront.
-- The app receives CloudFront URLs rather than raw S3 URLs.
+Generated images and thumbnails are served through CloudFront for faster delivery and cleaner public access control.
 
 ### Worker to Push Notifications
 
-- On job completion or failure, worker triggers a push notification.
-- MVP can use Expo Push.
-- Later, use direct APNs/FCM if more control is needed.
+When a job completes or fails, the worker can trigger Expo Push for MVP. Direct APNs/FCM can replace this later if more control is needed.
 
-## 7. Caching Design
+## 8. Device-Based History Model
 
-### MVP Caching
+V1 decision: Fiton Room will not require user login. Each app install will receive a backend-registered device install ID. History will be tied to that ID.
 
-- Mobile local cache for thumbnails and recent result images
-- CloudFront cache for result images
-- Database status polling for jobs
+### How It Works
 
-### Add Redis When Needed
+1. On first launch, the app generates a random UUID.
+2. The UUID is stored in secure local storage such as iOS Keychain or Expo SecureStore.
+3. The app registers this ID with the backend as a device profile.
+4. Photos, product inputs, jobs, and results are linked to the device profile.
+5. The user can view history from the same device without logging in.
 
-Use Redis for:
+### Important Notes
 
-- Job status cache
-- Rate limiting
-- Product URL extraction cache
-- Duplicate URL detection
-- Short-lived session or upload state
-- Worker progress updates
+- Do not rely on hardware IDs, IDFA, serial numbers, or other sensitive tracking identifiers.
+- If the user changes phone, history will not transfer until account login is added later.
+- If the install ID is deleted, history may become unreachable from the app unless recovery is implemented.
+- Add account migration later so a user can keep history across devices.
 
-Do not add Redis on day one unless the API needs rate limiting immediately.
+## 9. Initial Data Model
 
-## 8. Initial Data Model
+| Table | Purpose | Key Fields |
+| --- | --- | --- |
+| `device_profiles` | Anonymous v1 identity | `id`, `install_id_hash`, `platform`, `app_version`, `created_at`, `last_seen_at` |
+| `user_photos` | Uploaded body photos | `id`, `device_profile_id`, `s3_key`, `image_type`, `status`, `created_at` |
+| `product_inputs` | URL, screenshot, or share inputs | `id`, `device_profile_id`, `input_type`, `source_url`, `screenshot_s3_key`, `extraction_status` |
+| `try_on_jobs` | Async generation jobs | `id`, `device_profile_id`, `user_photo_id`, `product_input_id`, `status`, `failure_reason` |
+| `try_on_results` | Generated image records | `id`, `job_id`, `device_profile_id`, `result_s3_key`, `thumbnail_s3_key`, `provider` |
+| `push_tokens` | Notification routing | `id`, `device_profile_id`, `platform`, `token`, `enabled`, `updated_at` |
+| `deletion_requests` | Privacy and cleanup tracking | `id`, `device_profile_id`, `status`, `requested_at`, `completed_at` |
 
-### users
+## 10. Initial API Surface
 
-- id
-- email / auth_provider_id
-- display_name
-- created_at
-- updated_at
+### Device
 
-### user_photos
-
-- id
-- user_id
-- s3_bucket
-- s3_key
-- image_type: full_body
-- status: uploaded, rejected, deleted
-- created_at
-
-### product_inputs
-
-- id
-- user_id
-- input_type: url, screenshot, share_extension
-- source_url
-- screenshot_s3_key
-- extracted_title
-- extracted_brand
-- extracted_price
-- extracted_image_url
-- extraction_status
-- created_at
-
-### try_on_jobs
-
-- id
-- user_id
-- user_photo_id
-- product_input_id
-- status: pending, queued, processing, completed, failed
-- failure_reason
-- started_at
-- completed_at
-- created_at
-
-### try_on_results
-
-- id
-- job_id
-- user_id
-- result_s3_key
-- thumbnail_s3_key
-- model_provider
-- created_at
-
-### push_tokens
-
-- id
-- user_id
-- platform: ios, android
-- token
-- enabled
-- created_at
-- updated_at
-
-## 9. Initial API Surface
-
-### Auth
-
-- `POST /auth/sign-up`
-- `POST /auth/sign-in`
-- `POST /auth/sign-out`
-- `GET /me`
-
-Exact endpoints may change if using Supabase Auth or Cognito directly.
+- `POST /devices/register`
+- `PATCH /devices/me`
+- `GET /devices/me`
 
 ### Uploads
 
@@ -320,129 +245,74 @@ Exact endpoints may change if using Supabase Auth or Cognito directly.
 - `GET /results/:id`
 - `DELETE /results/:id`
 
-### Push Notifications
+### Push
 
 - `POST /push-tokens`
 - `DELETE /push-tokens/:id`
 
-## 10. MVP Development Phases
+### Privacy
 
-### Phase 1: Foundation
+- `POST /privacy/delete-device-data`
 
-- Mobile app shell
-- Auth
-- User photo upload to S3
-- Postgres schema
-- Backend API setup
+## 11. Caching Strategy
 
-### Phase 2: Try-On Job Flow
+### MVP Caching
 
-- Product URL input
-- Screenshot upload
-- Job creation
-- SQS queue
-- Worker skeleton
-- Job status screen
+- Mobile local cache for recent result thumbnails
+- CloudFront cache for result images and thumbnails
+- Database-backed job polling for the first version
 
-### Phase 3: AI Integration
+### Add Redis When Needed
 
-- Product extraction
-- Garment extraction
-- Virtual try-on API integration
-- Save result image
-- Result screen
+- Rate limiting by device install ID and IP
+- Fast job status updates
+- Duplicate product URL extraction cache
+- Temporary upload/session state
+- Worker progress updates
 
-### Phase 4: Polish
+## 12. Security and Privacy
 
-- Push notifications
-- Result gallery
-- Error states
-- Retry handling
-- Basic admin dashboard
+- Use pre-signed S3 URLs with short expiration times.
+- Keep S3 buckets private; serve approved results through CloudFront.
+- Hash the app install ID before storing it in Postgres.
+- Never use hardware identifiers as the primary user identity.
+- Allow users to delete uploaded photos and generated results.
+- Define raw photo retention before public launch.
+- Show clear consent before uploading body photos.
+- Log job failures without leaking sensitive image URLs.
 
-### Phase 5: Scale Later
+Privacy risk: Full-body photos are sensitive personal data. The MVP should include deletion, retention, and consent behavior from the start, even without user accounts.
 
-- Redis
-- ECS/Fargate workers
-- More advanced observability
-- Payments
-- Multiple try-on generations
-- Android share support
+## 13. Development Roadmap
 
-## 11. Key Risks
+| Phase | Goal | Deliverables |
+| --- | --- | --- |
+| Phase 1 | Foundation | Mobile app shell, device registration, backend setup, Postgres schema, S3 upload flow |
+| Phase 2 | Input and Job Flow | Photo upload, product URL input, screenshot upload, job creation, status screen |
+| Phase 3 | AI Integration | Worker, product extraction, garment extraction, virtual try-on API, result saving |
+| Phase 4 | History and Notifications | Device-based gallery, push notifications, deletion flow, error states |
+| Phase 5 | Admin and Polish | Basic admin dashboard, job review, failure monitoring, launch hardening |
 
-- Try-on quality may vary heavily by AI provider.
-- Product pages may block scraping or have inconsistent HTML.
-- User-uploaded body photos are sensitive personal data.
-- Image generation can be slow and expensive.
-- Lambda may not be enough if generation jobs run too long.
-- App store review may require clear privacy and data deletion policies.
+## 14. Open Questions
 
-## 12. Open Questions
+### Product
 
-### Product and User Flow
+1. Should the first release be iOS only, or iOS and Android?
+2. Should the first clothing input be product URL, screenshot upload, or iOS share extension?
+3. Should each try-on job generate one image or multiple variations?
+4. Should raw photos expire automatically after a set number of days?
+5. Should generated results be permanent until deleted?
 
-1. Who is the first target user: everyday shoppers, fashion creators, stylists, or ecommerce buyers?
-2. Is the MVP mobile-only, or do you also need a web/admin dashboard immediately?
-3. Should users be required to create an account before uploading photos?
-4. Should users upload exactly one full-body photo first, or allow 1-3 from the beginning?
-5. Should the app keep a permanent result history, or should generated images expire?
-6. Do users need to compare multiple try-on results side by side?
-7. Do users need to save favorite clothing items before generating?
+### Technical
 
-### Input Sources
+1. Do we use Expo or bare React Native?
+2. Do we choose NestJS or Fastify for the backend?
+3. Which virtual try-on API provider should be tested first?
+4. Should the MVP admin dashboard be included in the first build?
+5. What is the target processing time for one try-on job?
 
-8. For MVP, should product URL input come first, screenshot upload first, or both?
-9. Is the iOS Share Extension required in the first MVP release, or can it come after paste URL?
-10. Do you need Android support in the first MVP?
-11. Should the app support any ecommerce site, or only a small list of supported stores at first?
+### Business
 
-### AI and Image Generation
-
-12. Do you already have a GenAI / virtual try-on API provider in mind?
-13. Is realism more important, or speed/cost?
-14. Should the result preserve the user's face, or crop/blur the face for privacy?
-15. Should outputs be full-body only, or support upper-body/lower-body garments separately?
-16. How many try-on images should one job generate: one result or multiple options?
-
-### Privacy and Compliance
-
-17. How long should raw user photos be stored?
-18. Should users be able to delete all photos and generated results from the app?
-19. Are you planning to launch only in one country first?
-20. Do you need parental age restrictions or adult-content filtering?
-
-### Business Model
-
-21. Will the MVP be free, paid, credits-based, or subscription-based?
-22. Should users get a limited number of free generations?
-23. Do you need affiliate links or ecommerce checkout integration later?
-
-### Technical Decisions
-
-24. Do you prefer Supabase Auth or AWS Cognito?
-25. Do you prefer Supabase Postgres for speed, or AWS RDS Postgres for AWS consistency?
-26. Do you want to use Expo for React Native, or bare React Native?
-27. Do you want NestJS or Fastify for the backend?
-28. Should we deploy the backend first on AWS Lambda, ECS/Fargate, or a simpler platform for MVP?
-29. Do you want the admin dashboard in the MVP?
-30. What is your target timeline for the first working MVP?
-
-## 13. Current Recommendation
-
-Build the MVP with:
-
-- React Native + TypeScript
-- HeroUI Native
-- Expo if it does not block the iOS Share Extension workflow
-- Swift iOS Share Extension
-- Node.js Fastify or NestJS API
-- Supabase Auth + Supabase Postgres
-- AWS S3 for uploads and results
-- AWS CloudFront for image delivery
-- AWS SQS for async jobs
-- AWS Lambda worker first
-- Third-party virtual try-on API
-- Expo Push Notifications
-
-Avoid EKS/Kubernetes until the product has real users, repeated job volume, and infrastructure pain that justifies it.
+1. Will the MVP be free, credit-based, or subscription-based later?
+2. How many free generations should each device receive?
+3. Will Fiton Room support affiliate links or checkout integrations later?
