@@ -1,8 +1,10 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import ScreenScrollView from '@/components/screen-scroll-view';
 import { AppRadii, AppShadows, BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/lib/auth-context';
 import { ThemeMode, useThemeMode } from '@/lib/theme-mode';
 
 const themeOptions: { label: string; value: ThemeMode; description: string }[] = [
@@ -13,70 +15,104 @@ const themeOptions: { label: string; value: ThemeMode; description: string }[] =
 
 export default function SettingsScreen() {
   const theme = useTheme();
+  const { signOut, user } = useAuth();
   const { mode, setMode } = useThemeMode();
+  const [isSigningOut, setIsSigningOut] = useState(false);
+
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    try {
+      await signOut();
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <Text style={[styles.eyebrow, { color: theme.primary }]}>Settings</Text>
-          <Text style={[styles.title, { color: theme.text }]}>Make it yours.</Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Simple controls for the first version. More privacy and notification settings will come
-            later.
+    <ScreenScrollView contentContainerStyle={styles.container}>
+      <View style={styles.header}>
+        <Text style={[styles.eyebrow, { color: theme.primary }]}>Settings</Text>
+        <Text style={[styles.title, { color: theme.text }]}>Make it yours.</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+          Simple controls for the first version. More privacy and notification settings will come
+          later.
+        </Text>
+      </View>
+
+      <View
+        style={[
+          styles.panel,
+          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+        ]}>
+        <Text style={[styles.panelTitle, { color: theme.text }]}>Appearance</Text>
+        <View style={styles.optionList}>
+          {themeOptions.map((option) => {
+            const selected = mode === option.value;
+
+            return (
+              <Pressable
+                key={option.value}
+                onPress={() => setMode(option.value)}
+                style={[
+                  styles.option,
+                  {
+                    backgroundColor: selected ? theme.backgroundSelected : theme.background,
+                    borderColor: selected ? theme.primary : theme.border,
+                  },
+                ]}>
+                <View style={styles.optionText}>
+                  <Text style={[styles.optionTitle, { color: theme.text }]}>{option.label}</Text>
+                  <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>
+                    {option.description}
+                  </Text>
+                </View>
+                <View
+                  style={[
+                    styles.radio,
+                    {
+                      borderColor: selected ? theme.primary : theme.border,
+                      backgroundColor: selected ? theme.primary : 'transparent',
+                    },
+                  ]}
+                />
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
+      <View
+        style={[
+          styles.panel,
+          { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+        ]}>
+        <Text style={[styles.panelTitle, { color: theme.text }]}>Account</Text>
+        <View style={[styles.accountBox, { backgroundColor: theme.backgroundSelected }]}>
+          <Text style={[styles.accountLabel, { color: theme.textSecondary }]}>Signed in as</Text>
+          <Text numberOfLines={1} style={[styles.accountValue, { color: theme.text }]}>
+            {user?.email ?? user?.id ?? 'Fiton Room user'}
           </Text>
         </View>
-
-        <View
+        <Pressable
+          disabled={isSigningOut}
+          onPress={handleSignOut}
           style={[
-            styles.panel,
-            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+            styles.signOutButton,
+            { backgroundColor: theme.background, borderColor: theme.border },
+            isSigningOut && styles.disabledButton,
           ]}>
-          <Text style={[styles.panelTitle, { color: theme.text }]}>Appearance</Text>
-          <View style={styles.optionList}>
-            {themeOptions.map((option) => {
-              const selected = mode === option.value;
-
-              return (
-                <Pressable
-                  key={option.value}
-                  onPress={() => setMode(option.value)}
-                  style={[
-                    styles.option,
-                    {
-                      backgroundColor: selected ? theme.backgroundSelected : theme.background,
-                      borderColor: selected ? theme.primary : theme.border,
-                    },
-                  ]}>
-                  <View style={styles.optionText}>
-                    <Text style={[styles.optionTitle, { color: theme.text }]}>{option.label}</Text>
-                    <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>
-                      {option.description}
-                    </Text>
-                  </View>
-                  <View
-                    style={[
-                      styles.radio,
-                      {
-                        borderColor: selected ? theme.primary : theme.border,
-                        backgroundColor: selected ? theme.primary : 'transparent',
-                      },
-                    ]}
-                  />
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          {isSigningOut ? (
+            <ActivityIndicator color={theme.primary} />
+          ) : (
+            <Text style={[styles.signOutText, { color: theme.text }]}>Sign out</Text>
+          )}
+        </Pressable>
+      </View>
+    </ScreenScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
   container: {
     alignSelf: 'center',
     gap: 18,
@@ -143,5 +179,33 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     height: 20,
     width: 20,
+  },
+  accountBox: {
+    borderRadius: AppRadii.inner,
+    gap: 4,
+    padding: 14,
+  },
+  accountLabel: {
+    fontSize: 13,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  accountValue: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  signOutButton: {
+    alignItems: 'center',
+    borderRadius: AppRadii.control,
+    borderWidth: 1,
+    minHeight: 50,
+    justifyContent: 'center',
+  },
+  signOutText: {
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  disabledButton: {
+    opacity: 0.62,
   },
 });

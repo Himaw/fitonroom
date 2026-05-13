@@ -8,16 +8,16 @@ import {
   Modal,
   Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
+import ScreenScrollView from '@/components/screen-scroll-view';
 import { AppRadii, AppShadows, BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/lib/auth-context';
 import { getStoredBodyPhotos } from '@/lib/body-photo-store';
 import { getOrCreateDeviceInstallId } from '@/lib/device-install-id';
 
@@ -28,6 +28,7 @@ type ProductPhoto = {
 
 export default function FitonScreen() {
   const theme = useTheme();
+  const { user } = useAuth();
   const [deviceInstallId, setDeviceInstallId] = useState<string>('Preparing device history...');
   const [hasBodyPhotos, setHasBodyPhotos] = useState(false);
   const [productPhotos, setProductPhotos] = useState<ProductPhoto[]>([]);
@@ -86,8 +87,8 @@ export default function FitonScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      <ScrollView contentContainerStyle={styles.container}>
+    <>
+      <ScreenScrollView contentContainerStyle={styles.container}>
         <View style={styles.header}>
           <Text style={[styles.brand, { color: theme.primary }]}>Fiton Room</Text>
           <Text style={[styles.title, { color: theme.text }]}>Create a quick fiton.</Text>
@@ -166,13 +167,14 @@ export default function FitonScreen() {
             styles.statusCard,
             { backgroundColor: theme.surfaceStrong, borderColor: theme.border },
           ]}>
-          <Text style={[styles.statusLabel, { color: theme.accent }]}>Device history</Text>
-          <Text style={styles.statusTitle}>No login required for v1</Text>
+          <Text style={[styles.statusLabel, { color: theme.accent }]}>Account history</Text>
+          <Text style={styles.statusTitle}>Signed in and ready</Text>
           <Text style={styles.statusText}>
-            Fitons are saved to this app install: {deviceInstallId}
+            Fitons belong to {user?.email ?? 'your account'} and this device profile:{' '}
+            {deviceInstallId}
           </Text>
         </View>
-      </ScrollView>
+      </ScreenScrollView>
 
       <Modal
         animationType="fade"
@@ -232,14 +234,11 @@ export default function FitonScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </SafeAreaView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
   container: {
     alignSelf: 'center',
     gap: 18,
