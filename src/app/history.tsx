@@ -1,6 +1,6 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { StyleSheet, Text, View } from 'react-native';
 
+import ScreenScrollView from '@/components/screen-scroll-view';
 import { AppRadii, AppShadows, BottomTabInset, MaxContentWidth } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -15,57 +15,52 @@ export default function HistoryScreen() {
   const theme = useTheme();
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <View style={styles.header}>
-          <Text style={[styles.eyebrow, { color: theme.primary }]}>History</Text>
-          <Text style={[styles.title, { color: theme.text }]}>Your previous fitons.</Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Generated results for this device will appear here.
+    <ScreenScrollView contentContainerStyle={styles.container}>
+      <View style={styles.header}>
+        <Text style={[styles.eyebrow, { color: theme.primary }]}>History</Text>
+        <Text style={[styles.title, { color: theme.text }]}>Your previous fitons.</Text>
+        <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+          Generated results for your account will appear here.
+        </Text>
+      </View>
+
+      {fitonHistory.length === 0 ? (
+        <View
+          style={[
+            styles.emptyState,
+            { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+          ]}>
+          <Text style={[styles.emptyTitle, { color: theme.text }]}>No fitons yet</Text>
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+            Once you upload body photos and generate a try-on, the result list will show up here
+            with status, item name, and image preview.
           </Text>
         </View>
-
-        {fitonHistory.length === 0 ? (
-          <View
-            style={[
-              styles.emptyState,
-              { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-            ]}>
-            <Text style={[styles.emptyTitle, { color: theme.text }]}>No fitons yet</Text>
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-              Once you upload body photos and generate a try-on, the result list will show up here
-              with status, item name, and image preview.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.list}>
-            {fitonHistory.map((item) => (
-              <View
-                key={item.id}
-                style={[
-                  styles.historyItem,
-                  { backgroundColor: theme.backgroundElement, borderColor: theme.border },
-                ]}>
-                <View style={[styles.thumbnail, { backgroundColor: theme.backgroundSelected }]} />
-                <View style={styles.historyText}>
-                  <Text style={[styles.itemTitle, { color: theme.text }]}>{item.title}</Text>
-                  <Text style={[styles.itemMeta, { color: theme.textSecondary }]}>
-                    {item.status} · {item.createdAt}
-                  </Text>
-                </View>
+      ) : (
+        <View style={styles.list}>
+          {fitonHistory.map((item) => (
+            <View
+              key={item.id}
+              style={[
+                styles.historyItem,
+                { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+              ]}>
+              <View style={[styles.thumbnail, { backgroundColor: theme.backgroundSelected }]} />
+              <View style={styles.historyText}>
+                <Text style={[styles.itemTitle, { color: theme.text }]}>{item.title}</Text>
+                <Text style={[styles.itemMeta, { color: theme.textSecondary }]}>
+                  {item.status} · {item.createdAt}
+                </Text>
               </View>
-            ))}
-          </View>
-        )}
-      </ScrollView>
-    </SafeAreaView>
+            </View>
+          ))}
+        </View>
+      )}
+    </ScreenScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
   container: {
     alignSelf: 'center',
     gap: 18,

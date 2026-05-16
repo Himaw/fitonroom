@@ -6,7 +6,6 @@ import React from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { MaxContentWidth } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
 import { useThemeMode } from '@/lib/theme-mode';
 
 type SymbolName = React.ComponentProps<typeof SymbolView>['name'];
@@ -113,7 +112,6 @@ function TabButton({ icon, isFocused, label, ...props }: TabTriggerSlotProps & {
   icon: SymbolName;
   label: string;
 }) {
-  const theme = useTheme();
   const { resolvedTheme } = useThemeMode();
   const isDark = resolvedTheme === 'dark';
   const activeColor = isDark ? '#e9fff9' : '#103f3a';
@@ -125,8 +123,13 @@ function TabButton({ icon, isFocused, label, ...props }: TabTriggerSlotProps & {
         style={[
           styles.tabButtonSurface,
           isFocused && {
-            backgroundColor: isDark ? 'rgba(112, 199, 184, 0.18)' : 'rgba(255, 255, 255, 0.72)',
-            borderColor: isDark ? 'rgba(112, 199, 184, 0.28)' : 'rgba(255, 255, 255, 0.9)',
+            backgroundColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.85)',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 1)',
+            shadowColor: isDark ? '#ffffff' : '#000000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: isDark ? 0.1 : 0.05,
+            shadowRadius: 12,
+            elevation: 2,
           },
         ]}>
         <SymbolView
@@ -146,7 +149,6 @@ function TabButton({ icon, isFocused, label, ...props }: TabTriggerSlotProps & {
           ]}>
           {label}
         </Text>
-        {isFocused && <View style={[styles.activeDot, { backgroundColor: theme.primary }]} />}
       </View>
     </Pressable>
   );
@@ -224,12 +226,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 0,
     lineHeight: 14,
-  },
-  activeDot: {
-    borderRadius: 2,
-    height: 4,
-    marginTop: 1,
-    width: 4,
   },
   shadowBloom: {
     borderRadius: 34,
