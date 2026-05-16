@@ -9,29 +9,45 @@ const supabaseKey =
   process.env.EXPO_PUBLIC_SUPABASE_KEY?.trim() ??
   process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim();
 
+const isBrowser = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+
 const secureStorage = {
   getItem: async (key: string) => {
-    if (Platform.OS === 'web') {
-      return globalThis.localStorage?.getItem(key) ?? null;
+    if (isBrowser) {
+      return window.localStorage.getItem(key);
     }
 
-    return SecureStore.getItemAsync(key);
+    if (SecureStore?.getItemAsync) {
+      try {
+        return await SecureStore.getItemAsync(key);
+      } catch {}
+    }
+
+    return null;
   },
   setItem: async (key: string, value: string) => {
-    if (Platform.OS === 'web') {
-      globalThis.localStorage?.setItem(key, value);
+    if (isBrowser) {
+      window.localStorage.setItem(key, value);
       return;
     }
 
-    await SecureStore.setItemAsync(key, value);
+    if (SecureStore?.setItemAsync) {
+      try {
+        await SecureStore.setItemAsync(key, value);
+      } catch {}
+    }
   },
   removeItem: async (key: string) => {
-    if (Platform.OS === 'web') {
-      globalThis.localStorage?.removeItem(key);
+    if (isBrowser) {
+      window.localStorage.removeItem(key);
       return;
     }
 
-    await SecureStore.deleteItemAsync(key);
+    if (SecureStore?.deleteItemAsync) {
+      try {
+        await SecureStore.deleteItemAsync(key);
+      } catch {}
+    }
   },
 };
 
